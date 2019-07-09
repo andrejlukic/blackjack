@@ -39,7 +39,7 @@ if __name__ == '__main__':
         else:
             print(game)
         msg = game.settlebets() # pay out money
-        game.endgame(gid) # clean up
+        game.endgame() # clean up
         print(msg)
         pn = input("\nPress enter to continue s to stop l to load game ...")
         if(pn == 's'):
