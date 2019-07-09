@@ -6,9 +6,10 @@ Created on 8 Jul 2019
 @author Andrej Lukic
 '''
 
-from flask import Flask, render_template, request
 import os
 import json
+from flask import Flask, render_template, request
+from pathlib import Path    # for dumping and reloading state of the game
 from blackjack import GameBlackJack, PlayerBlackJack, PlayerBlackJackHouse
 from flask_socketio import SocketIO, join_room
 
@@ -176,7 +177,7 @@ def nextplayermove(game, previous_action):
 @socketio.on('disconnect')
 def cleanup():
     debugout('{} disconnected'.format(request.sid))
-    fs = '{}\\{}'.format(GameBlackJack.SESSIONS_DIR, request.sid)    
+    fs = Path('{}/{}'.format(GameBlackJack.SESSIONS_DIR, request.sid))    
     if(os.path.isfile(fs)):
         pass    #TODO cleanup session files
         #os.remove(fs)

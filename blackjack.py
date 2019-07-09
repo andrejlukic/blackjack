@@ -9,10 +9,11 @@ Created on 8 Jul 2019
 @author Andrej Lukic
 '''
 
-import os               # for dumping and reloading state of the game
-import jsonpickle, json # for dumping and reloading state of the game
-import uuid             # for dumping and reloading state of the game
-import random           # shuffling card decks
+import os                   # for dumping and reloading state of the game
+import jsonpickle, json     # for dumping and reloading state of the game
+import uuid                 # for dumping and reloading state of the game
+from pathlib import Path    # for dumping and reloading state of the game
+import random               # shuffling card decks
 
 class GameBlackJack:    
     """Game (round) of BlackJack
@@ -229,14 +230,16 @@ class GameBlackJack:
             os.mkdir(GameBlackJack.SESSIONS_DIR)
         if(not self.gameid):
             self.gameid = str(uuid.uuid4())
-        with open('{}\{}'.format(GameBlackJack.SESSIONS_DIR, self.gameid), 'w') as filehandle:                        
+        filepath = Path('{}/{}'.format(GameBlackJack.SESSIONS_DIR, self.gameid))
+        with open(filepath, 'w') as filehandle:                        
             json.dump(jsonpickle.encode(self), filehandle)
         return self.gameid
     
     @classmethod
     def getstate(cls, gameid):
-            with open('{}\{}'.format(GameBlackJack.SESSIONS_DIR, gameid), 'r') as filehandle:
-                return jsonpickle.decode(json.load(filehandle))
+        filepath = Path('{}/{}'.format(GameBlackJack.SESSIONS_DIR, gameid))
+        with open(filepath, 'r') as filehandle:
+            return jsonpickle.decode(json.load(filehandle))
     
     @classmethod
     def getactivemultiplayergames(cls):
