@@ -54,7 +54,7 @@ I was thinking about some simple way to add UI and since I had just recently dis
 + *main.py* - logic for playing game via a command line interface
 + *game21_api.py* - logic for playing game via a web interface
 + *templates/cards.html* - web game UI using JQuery and SocketIO for communication with the backend. The code for the communication is embedded inside HTML and is a total mess (TODO: refactoring)
-+ *blackjack/static* - all the static CSS and *js files for displaying the cards + generic bootstrap files
++ *static/** - all the static CSS and *js files for displaying the cards + generic bootstrap files
 
 Only the most important unit tests have been implemented and there is no error handling and (almost) zero input validation. Any bad input will break the game.
 
