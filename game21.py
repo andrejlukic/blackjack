@@ -1,11 +1,34 @@
 '''
 Created on 8 Jul 2019
 
-    BlackJack
+    Game of 21
     
-    Classes for storing the state of the BlackJack game. Game supports single player (player against the house) or multiplayer (group of players against the house).    
-    The rules for the game were taken from here: https://bicyclecards.com/how-to-play/blackjack/    
-
+    Classes for storing the state of the 21  game. Game supports single player (player against the house) or multiplayer (group of players against the house).    
+    The rules for the game:        
+    
+    All players in the game place their bets after receiving their first card. Once everyone has placed their bets,
+    the participants get a second card.
+    
+    One by one, the players of the game get the opportunity to play until they are finished. Each play, the
+    players have the option to ‘stand’ (hold your total and end your turn, you cannot play any further), ‘hit’
+    (ask for a card to bring your points as close as possible to 21), or perform special actions (here only ‘split’).
+    If a player has more than 21 points in her hand, she is ‘bust’, and her bets are lost.
+    
+    If all players are ready (stand or bust) the bank must play (only if there are players who are not bust). The
+    rules for the bank are simple: The bank must hit when it has a total of 16 points or less and must stand
+    with a total of 17 points or more. When the bank and player have the same number of points, the bank
+    wins. If the bank has more than 21 points, the bank is bust and all players that are standing, win.
+    
+    When a player gets two identical cards, she can choose to ‘split’. This means that the cards are placed next
+    to each other on the table and the player can play twice, one game per card.
+    
+    The number of points for the cards is as follows:
+    > King 3 points, queen 2 points, jack 1 point.
+    > Ace is 1 or 11 points of your choice.
+    > Cards 2 to 10 have their normal point value.
+    > The ‘suit’ of the card is not important.
+    > The Joker does not play
+    
 @author Andrej Lukic
 '''
 
@@ -15,13 +38,11 @@ import uuid                 # for dumping and reloading state of the game
 from pathlib import Path    # for dumping and reloading state of the game
 import random               # shuffling card decks
 
-class GameBlackJack:    
-    """Game (round) of BlackJack
+class Game21:    
+    """Game (round) of 21
     
     Functions for storing the state of the game round, determining whether the round is over and who won.
     Possible modes: player against the house or group of players against the house.
-    
-    The rules for the game were taken from here: https://bicyclecards.com/how-to-play/blackjack/
 
     Methods
     -------
@@ -62,17 +83,15 @@ class GameBlackJack:
         self.players = []
         self.bets = 0
         self.playerturn = None
-        self.gameid = gameid
+        self.gameid = gameid        
         
     def addplayer(self, player):
         """Adds a new player to the game.
         
         Player must have a unique name and had to have bet money on this game
         """
-        if(player.money < 0):
-            raise
-        if(player.bet_amount <= 0):
-            raise        
+        if(player.money <= 0):
+            raise                
         if(player in self.players):
             raise
                 
@@ -99,12 +118,12 @@ class GameBlackJack:
         """Player can either take a new card (hit) or wait (stand).
         
         Arguments:
-        move -- GameBlackJack.MOVE_HIT | GameBlackJack.MOVE_STAND
+        move -- Game21.MOVE_HIT | Game21.MOVE_STAND
         
         Functions returns True if player can do another move or False if player is bust or has hit Blackjack.
         """
         
-        if(move == GameBlackJack.MOVE_HIT):
+        if(move == Game21.MOVE_HIT):
             player.getcard(self.decks.popcard())            
             return player.isbust() or player.has21()
         else:
@@ -113,7 +132,7 @@ class GameBlackJack:
     def nextplayer(self):
         """ Called after one of the players has done the move to get the next player in order. The last player is always house. """
                 
-        if(isinstance(self.playerturn, PlayerBlackJackHouse)):  # this should never happen
+        if(isinstance(self.playerturn, PlayerGame21House)):  # this should never happen
             raise   #todo
         
         next_player = self.players.index(self.playerturn) + 1
@@ -142,7 +161,7 @@ class GameBlackJack:
         for p in self.players:
             if(self.house.has21()):
                 if(p.has21()):      #player also has 21 it's a tie                    
-                    dbgmsg.append(self.tie(p))  # player and house have a GameBlackJack.NATURAL
+                    dbgmsg.append(self.tie(p))  # player and house have a Game21.NATURAL
                 else:
                     dbgmsg.append(self.housewins(p)) # player has lost
             elif(self.house.isbust()): #house > 21                
@@ -189,24 +208,36 @@ class GameBlackJack:
     def startgame(self):
         """ Give cards to each of the players and set the turn to the first player. """
         
-        # first card is dealt face up
-        for p in self.players:            
-            p.getcard(self.decks.popcard())
-                        
-        # first card is dealt to the house face up
-        self.house.getcard(self.decks.popcard())
-        
-        # second card is dealt face up
-        for p in self.players:            
-            p.getcard(self.decks.popcard())
-        
-        # second card is dealt to the house face down
-        self.house.getcard(self.decks.popcard(facedown = True))
-        
-        self.playerturn = self.players[0]
-        
-        return not self.isgameover() # check if it makes sense to continue playing
+        if(self.betting_turn() == 0): # bets have not yet been placed
+            # first card is dealt face up
+            for p in self.players:            
+                p.getcard(self.decks.popcard())
+                            
+            # first card is dealt to the house face up
+            self.house.getcard(self.decks.popcard())
+            return None
+        else:
+            # second card is dealt face up
+            for p in self.players:            
+                p.getcard(self.decks.popcard())
+            
+            # second card is dealt to the house face down
+            self.house.getcard(self.decks.popcard(facedown = True))
+            
+            self.playerturn = self.players[0]                    
+            return not self.isgameover() # check if it makes sense to continue playing
     
+    def betting_turn(self):
+        """ Whose turn is it to place bets """
+          
+        bet_turn = 0
+        for player in self.players:
+            if(player.bet_amount <= 0):
+                return bet_turn
+            else:
+                bet_turn += 1
+        return bet_turn
+            
     def endgame(self):
         """ Prepare for next round by resetting hands and bets for each of the players. Reshuffle cards."""
         
@@ -226,34 +257,34 @@ class GameBlackJack:
         raise   # TODO
         
     def dumpstate(self):
-        if(not os.path.isdir(GameBlackJack.SESSIONS_DIR)):
-            os.mkdir(GameBlackJack.SESSIONS_DIR)
+        if(not os.path.isdir(Game21.SESSIONS_DIR)):
+            os.mkdir(Game21.SESSIONS_DIR)
         if(not self.gameid):
             self.gameid = str(uuid.uuid4())
-        filepath = Path('{}/{}'.format(GameBlackJack.SESSIONS_DIR, self.gameid))
+        filepath = Path('{}/{}'.format(Game21.SESSIONS_DIR, self.gameid))
         with open(filepath, 'w') as filehandle:                        
             json.dump(jsonpickle.encode(self), filehandle)
         return self.gameid
     
     @classmethod
     def getstate(cls, gameid):
-        filepath = Path('{}/{}'.format(GameBlackJack.SESSIONS_DIR, gameid))
+        filepath = Path('{}/{}'.format(Game21.SESSIONS_DIR, gameid))
         with open(filepath, 'r') as filehandle:
             return jsonpickle.decode(json.load(filehandle))
     
     @classmethod
     def getactivemultiplayergames(cls):
         """ Helper method for UI - returns all active multiplayer game ids by looking at existing game files """
-        #sess_files = glob.glob("{}".format(GameBlackJack.SESSIONS_DIR)).sort(key=os.path.getmtime, reverse=True) # get game files and sort descending by date
-        sess_files = os.listdir("{}".format(GameBlackJack.SESSIONS_DIR))
-        #print('{1}: {0}'.format(sess_files,"{}".format(GameBlackJack.SESSIONS_DIR)))        
+        #sess_files = glob.glob("{}".format(Game21.SESSIONS_DIR)).sort(key=os.path.getmtime, reverse=True) # get game files and sort descending by date
+        sess_files = os.listdir("{}".format(Game21.SESSIONS_DIR))
+        #print('{1}: {0}'.format(sess_files,"{}".format(Game21.SESSIONS_DIR)))        
         first_players = []
         game_ids = []
         for file in sess_files:
             #gid = file.split('\\')[1] #TODO check if backslash exists
             gid = file
             #print(gid)            
-            game = GameBlackJack.getstate(gid)            
+            game = Game21.getstate(gid)            
             if(game.multiplayer):
                 first_players.append(game.players[0].name)
                 game_ids.append(gid)
@@ -291,27 +322,33 @@ class Card:
         return (rank + suit * 13) + 1
 
 
-class CardBlackJack(Card):
-    """Card for Blackjack
+class Game21Card(Card):
+    """Card for Game of 21
     
     Values of Blackjack hand:
-    hand 2 - 10 = face value
-    hand J,Q,K = 10
-    Ace = 1
+    2 - 10 = face value
+    J = 1
+    Q = 2
+    K = 3
+    Ace = 11
     """
     
     RANK = [i for i in range(2, 11)] + ['JACK', 'QUEEN', 'KING', 'ACE']
     SUIT = ['SPADE', 'HEART ', 'CLUB', 'DIAMOND']
     
     def getval(self):
-        """ Returns card value consistent with rules of blackjack. """
+        """ Returns card value consistent with rules of game of 21. """
         
         if(self._card[0] not in ['JACK', 'QUEEN', 'KING', 'ACE']):
             return int(self._card[0])
-        elif(self._card[0] == 'ACE'):
+        elif(self._card[0] == 'JACK'):
             return 1
-        else:
-            return 10
+        elif(self._card[0] == 'QUEEN'):
+            return 2
+        elif(self._card[0] == 'KING'):
+            return 4
+        elif(self._card[0] == 'ACE'):
+            return 11        
     
     def __repr__(self):
         #rname = '♠'
@@ -339,7 +376,7 @@ class Decks:
     
         self.decks = []
         for _ in range(0, num_decks):            
-            self.decks += [CardBlackJack(r,s) for r in CardBlackJack.RANK for s in CardBlackJack.SUIT]
+            self.decks += [Game21Card(r,s) for r in Game21Card.RANK for s in Game21Card.SUIT]
         random.shuffle(self.decks)
         
     def popcard(self, facedown = False):
@@ -427,8 +464,8 @@ class Player:
     def __repr__(self):            
         return "{0}\n{1}EUR\n{2}".format(self.name, self.money, self.hand)
     
-class PlayerBlackJack(Player):
-    """Player of GameBlackJack
+class PlayerGame21(Player):
+    """Player of Game21
     
     Player's hand is evaluated by the rules of blackjack.
 
@@ -450,10 +487,10 @@ class PlayerBlackJack(Player):
         Since Aces can have a value of wither 1 or 11, they initially count as 11. 
         If the sum is over 21, Aces start counting as 1 until there is no more Aces left or the sum is under 21. 
         
-        Values of Blackjack cards:
-        hand 2 - 10 = face value
-        hand J,Q,K = 10
-        Ace = 1
+        Values of Game of 21 cards:
+        2 - 10 = face value
+        J = 1,Q = 2,K = 3
+        Ace = 1 or 11
         """
         
         cardsum = 0
@@ -461,29 +498,28 @@ class PlayerBlackJack(Player):
         for c in self.hand:
             cardval = c.getval()
             cardsum += cardval
-            if(cardval == 1):   # Aces are internally represented as 1
-                cardsum += 10   # Initially count all Aces as 11
+            if(cardval == 11):                
                 aces += 1
-        while(aces > 0 and cardsum > GameBlackJack.NATURAL): # count Aces as 1 instead until the sum is under 21
+        while(aces > 0 and cardsum > Game21.NATURAL): # count Aces as 1 instead until the sum is under 21
             cardsum -= 10
             aces -= 1                            
         return cardsum
     
     def cardsdiff(self):                                    
-        return GameBlackJack.NATURAL - self.cardsvalue()
+        return Game21.NATURAL - self.cardsvalue()
     
     def has21(self):
-        return self.cardsvalue() == GameBlackJack.NATURAL
+        return self.cardsvalue() == Game21.NATURAL
     
     def isbust(self):
-        return self.cardsvalue() > GameBlackJack.NATURAL
+        return self.cardsvalue() > Game21.NATURAL
 
     def __repr__(self):            
         return "\n{0}\t[{1}EUR]\t{2} = {3} [bet {4}EUR]".format(self.name, self.money, self.hand, self.cardsvalue(), self.bet_amount)
 
 
-class PlayerBlackJackHouse(PlayerBlackJack):
-    """House in BlackJack is just another player
+class PlayerGame21House(PlayerGame21):
+    """House in Game of 21 is just another player
         
     House has unlimited money and always matches other players's bets.
     House always wins with factor = 1.0

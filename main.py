@@ -1,26 +1,26 @@
 '''
 Created on 8 Jul 2019
 
-Simple command line interface for the blackjack game.
+Simple command line interface for the game21 game.
 
 @author: Andrej
 '''
-from blackjack import GameBlackJack, PlayerBlackJack, PlayerBlackJackHouse
+from blackjack import Game21, PlayerGame21, PlayerGame21House
 
 if __name__ == '__main__':
     dbg = input("(n)ew game or (l)oad state: ")    
     pn = input("\nplayer name: ")
-    player = PlayerBlackJack(pn, 1000)  # init player
-    house = PlayerBlackJackHouse()  #init house player
+    player = PlayerGame21(pn, 1000)  # init player
+    house = PlayerGame21House()  #init house player
     while(True):
         bet_str = input("bet amount: ")
         player.bet(int(bet_str))
-        game = GameBlackJack(house)
+        game = Game21(house)
         gid = game.dumpstate()
         #print("\tdumped to {0}".format(gid))
         if(dbg == 'l'): # load previously saved state for debugging
             gid = input("game id:")
-            game = GameBlackJack.getstate(gid)                        
+            game = Game21.getstate(gid)                        
         game.addplayer(player)
         oktocontinue = game.startgame() 
         print(game) 

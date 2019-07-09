@@ -1,7 +1,7 @@
 '''
 Created on 8 Jul 2019
 
-    BlackJack API    
+    Game of 21 API    
 
 @author Andrej Lukic
 '''
@@ -10,7 +10,7 @@ import os
 import json
 from flask import Flask, render_template, request
 from pathlib import Path    # for dumping and reloading state of the game
-from blackjack import GameBlackJack, PlayerBlackJack, PlayerBlackJackHouse
+from game21 import Game21, PlayerGame21, PlayerGame21House
 from flask_socketio import SocketIO, join_room
 
 app = Flask(__name__)
@@ -31,7 +31,7 @@ def on_connected(json, methods=['GET', 'POST']):
 @socketio.on('list_multiplayer_games')
 def list_games(data, methods=['GET', 'POST']):
     debugout('{0}: list multiplayer games'.format(data['player_name'], data['bet_amount']))    
-    json_response = json.dumps( GameBlackJack.getactivemultiplayergames() )
+    json_response = json.dumps( Game21.getactivemultiplayergames() )
     socketio.emit('display_multiplayer_games', json_response, callback=messageReceived)
        
 @socketio.on('addfirstplayer')
@@ -42,20 +42,18 @@ def addfirstplayer(data, methods=['GET', 'POST']):
     If the game is multiplayer enter waiting state until the next user joins, gameid = sessionid of the first player
     
     PARAMETERS:
-        game_type -- singleplayer | multiplayer
-        bet_amount -- amount of money player bets on this game
+        game_type -- singleplayer | multiplayer        
         player_name -- name of the first player
     """
     
-    debugout('{1} [{2}EUR] = first player, game type = {0}'.format(data['game_type'], data['player_name'], data['bet_amount']))
+    debugout('{1} first player, game type = {0}'.format(data['game_type'], data['player_name']))
     
-    firstplayer = PlayerBlackJack(data['player_name'], 1000)    
-    firstplayer.bet(int(data['bet_amount']))  
-    game = GameBlackJack(PlayerBlackJackHouse(), gameid = request.sid)
+    firstplayer = PlayerGame21(data['player_name'], 1000)
+    game = Game21(PlayerGame21House(), gameid = request.sid)
     game.addplayer(firstplayer)
     
     if(data['game_type'] == 'singleplayer'):  #todo replace constant              
-        gamestart(game) # directly start the singleplayer game
+        startbettinground(game) # directly start the betting round
     else:   # multiplayer game, wait for the other user
         game.multiplayer = True        
         join_room(game.gameid)
@@ -68,36 +66,64 @@ def joingame(data, methods=['GET', 'POST']):
     """player joins the game (only for multiplayer game)    
     
     PARAMETERS:
-    gameid -- id of the multiplayer game
-    bet_amount -- amount of money player bets on this game
-    player_name -- name of the first player
+    gameid -- id of the multiplayer game    
+    player_name -- name of the joined player
     """
        
     gameid = data['gameid']
-    player_name = data['player_name']
-    amount = int(data['bet_amount'])
-    debugout('{0} {1} joined. bet = {2} eur'.format(gameid, player_name, amount))
+    player_name = data['player_name']    
+    debugout('{0} {1} joined'.format(gameid, player_name))
         
-    secondplayer = PlayerBlackJack(player_name, 1000)
-    secondplayer.bet(amount)    
-    game = GameBlackJack.getstate(gameid) 
+    secondplayer = PlayerGame21(player_name, 1000)        
+    game = Game21.getstate(gameid) 
     game.addplayer(secondplayer)
     game.dumpstate()
-    join_room(gameid)    
-    gamestart(game)
-      
-def gamestart(game):
-    """ Start game of BlackJack and give turn to the first player (or end immediately) """
-    
-    debugout('{1} - game start'.format(game.players[0].name, game.gameid))
+    join_room(gameid)
+    startbettinground(game)
+
+def startbettinground(game):
+    """ All players place bets """
+    game.startgame() # deal the first card  
+    game.dumpstate()
+    debugout('{0} start betting round with player {1}'.format(game.gameid, game.betting_turn()))
+    socketio.emit('start_betting', json.dumps(getpayload(game, None, None, True)), callback=messageReceived, room=game.gameid)
      
-    oktocontinue = game.startgame()    
+@socketio.on('place_bet')
+def placebet(data):
+    """ Players place bets """
+     
+    gameid = data['gameid'] 
+    name = data['player_name']        
+    amount = int(data['bet_amount'])
+    
+    debugout('{0} - {1} bets {2}'.format(gameid, name, amount))    
+    
+    game = Game21.getstate(gameid)
+    player = game.players[game.betting_turn()]
+    if(player.name != name):
+        raise   # should not happen
+    player.bet(amount)
+    game.dumpstate()
+    
+    if(game.betting_turn() >= len(game.players)): # last player has placed her bet        
+        gamestart(game)
+    else: # not all players have placed their bets          
+        payload = getpayload(game, None, None, True)
+        socketio.emit('start_betting', json.dumps(payload), callback=messageReceived, room=game.gameid)
+     
+def gamestart(game):
+    """ Start game of 21 after betting round hasbeen completed """
+    
+    debugout('{1} - game start, bets placed = {2}'.format(game.players[0].name, game.gameid, game.betting_turn()))
+     
+    oktocontinue = game.startgame()
+       
     msg=''
     if(not oktocontinue):   # check if makes sense to continue playing
         msg = ','.join(game.settlebets())
     
     while(game.playerturn.has21() and game.playerturn.name != 'house'): # skip players who already have 21
-        game.nextplayer()
+        game.nextplayer()    
 
     payload = getpayload(game, msg, None, oktocontinue)
     #debugout('{0} send response to room'.format(gameid, payload))
@@ -114,12 +140,10 @@ def gamerestart(data, methods=['GET', 'POST']):
     
     gameid = data['gameid']    
     debugout('{0} restart'.format(gameid))
-    game = GameBlackJack.getstate(gameid)
-    game.endgame()  # this cleans up the state for every player
+    game = Game21.getstate(gameid)
+    game.endgame()  # this cleans up the state for every player    
     
-    for player in game.players: # this is a hack, because GUI for betting round is not there yet)
-        player.bet(int(data['bet']))
-    gamestart(game)
+    startbettinground(game)
     
 @socketio.on('player_move')
 def playermove(data, methods=['GET', 'POST']):
@@ -136,7 +160,7 @@ def playermove(data, methods=['GET', 'POST']):
     name = data['player_name']
     debugout('{2} - {0} => {1}'.format(data['player_name'], action, gameid))
        
-    game = GameBlackJack.getstate(gameid)
+    game = Game21.getstate(gameid)
     if(game.playerturn.name != name):   # this shold not occur
         raise   #TODO: implement exception here
     
@@ -177,7 +201,7 @@ def nextplayermove(game, previous_action):
 @socketio.on('disconnect')
 def cleanup():
     debugout('{} disconnected'.format(request.sid))
-    fs = Path('{}/{}'.format(GameBlackJack.SESSIONS_DIR, request.sid))    
+    fs = Path('{}/{}'.format(Game21.SESSIONS_DIR, request.sid))    
     if(os.path.isfile(fs)):
         pass    #TODO cleanup session files
         #os.remove(fs)
@@ -190,11 +214,17 @@ def getpayload(game, msg, action, uistate):
         player2_data =  None
     
     turn = None    
+    
+    if(game.betting_turn() >= len(game.players)):
+        betting_turn_name = None
+    else:
+        betting_turn_name = game.players[game.betting_turn()].name
     if(game.playerturn):
-        turn = game.playerturn.name    
+        turn = game.playerturn.name 
     return {'player': player1_data, 
             'player2': player2_data, 
             'house': game.house.toDict(),
+            'betting_turn': betting_turn_name,
             'action':action, 
             'gameid':game.gameid, 
             'player_turn': turn, 
