@@ -1,28 +1,28 @@
-### Singleplayer / Multiplayer Blackjack in Python, Flask-API, SocketIO and HTML/CSS
+### Singleplayer / Multiplayer Game of 21 (Eenentwintgen) in Python, Flask-API, SocketIO and HTML/CSS
 
-### Blackjack / Twenty-One
+### Eenentwintgen / Twenty-One
 
-Blackjack or Twenty-One is a game, where a player tries to reach 21 points without going over and the ace values 1 or 11. The game seems to be quite old, as the spanish version (veintiuna) was first mentioned by Miguel de Cervantes between 1601-1602 [source: wikipedia](https://en.wikipedia.org/wiki/Blackjack), so it had probably been played even before that time. The rules can be found on many web site, I found this one to be nicely written: [Bicyclecards - How to Play Blackjack](https://bicyclecards.com/how-to-play/blackjack/)
+Twenty-One is a game, where a player tries to reach 21 points without going over and the ace values 1 or 11. The game seems to be quite old, as the spanish version (veintiuna) was first mentioned by Miguel de Cervantes between 1601-1602 [source: wikipedia](https://en.wikipedia.org/wiki/Blackjack), so it had probably been played even before that time. The rules are a little bit different than Blackjack in that players place their bets after receiving their first card. Once everyone has placed their bets, they get a second card and the game begins.
 
-The code is free and you can download it here: [blackjack](https://github.com/andrejlukic/blackjack)
+The code is free and you can download it here: [Eenentwintigen](https://github.com/andrejlukic/blackjack/tree/Eenentwintigen)
 
-You can play around with the live demo here: [Blackjack live demo](http://crunchymebumblebee.org/)
+You can play around with the live demo here: [Eenentwintigen live demo](http://crunchymebumblebee.org/)
 
 ![multiplayer version](https://github.com/andrejlukic/blackjack/blob/master/docs/15_multiplayer_game_play.png "Multiplayer gameplay")
 
 ### Application
 
-You play as one player against the dealer or with another person against the dealer (backend should support N players but the UI supports only 2 players). Rules were implemented according to description on [Bicyclecards - How to Play Blackjack](https://bicyclecards.com/how-to-play/blackjack/). Not all of the game options were implemented, eg there is no split, double-down or insurance and the UI lacks the logic for taking the bets in every round and it just reuses the initial bet value for each of the player - but these are trivial to add to the existing framework. 
+You play as one player against the dealer or with another person against the dealer (backend should support N players but the UI supports only 2 players). Not all of the game options were implemented, eg there is no split, double-down or insurance. 
 
 #### Singleplayer
-Simply enter your name and an amount you want to bet (each player starts with 1000€ by default) and press the button *Play*.
+Simply enter your name and press the button *Play*, then add an amount you want to bet (each player starts with 1000€ by default).
 
 #### Multiplayer (2 players)
 One player has to start the game and then other players can join: 
 + First player: check the Multiplayer checkbox and press the button *Start new game* then wait ... 
-+ Second player: check the Multiplayer checkbox and click the button *Join existing game*. You should see a list of all the active multiplayer games with names of the players, that had started them. After you select one of them, the game will start by giving turn to the player who had started the multiplayer game. You will know that it is your turn when two buttons popup (Hit or Stand).
++ Second player: check the Multiplayer checkbox and click the button *Join existing game*. You should see a list of all the active multiplayer games with names of the players, that had started them. After you select one of them, the betting round will start so that each of the players can place bets. The game will start by giving turn to the player who had started the multiplayer game. You will know that it is your turn when two buttons popup (Hit or Stand).
 
-After each round the game will restart automatically (using the previous bet amount). You will see the result of previous game on the right side in a simple text log output.
+After each round the game will restart automatically with the betting round. You will see the result of previous game on the right side in a simple text log output.
 
 ### Requirements & Installation
 
@@ -30,7 +30,7 @@ Python 3.6 (flask, flask_socketio, jsonpickle, json, glob, random, uuid)
 
 #### Dev environment
 
-Simply download the files and run python main.py to play the command line vesion or run python  blackjack_api.py to start the Flask server and then hit 127.0.0.1:88 from any web browser. You should see an empty bootstrap page template with a simple form to start the game. You can change the url to whatever you want, but you have to do it in two places, in blackjack_api.py and in templates/cards.html.
+Simply download the files and run python main.py to play the command line vesion or run python game21_api.py to start the Flask server and then hit 127.0.0.1:88 from any web browser. You should see an empty bootstrap page template with a simple form to start the game. You can change the url to whatever you want, but you have to do it in two places, in game21_api.py and in templates/cards.html.
 
 Note: if you are tired of always running dev environment, it is also possible to wrap it as a service, but it is not reccommended to run it like this in production environment (I have included an example config at the end of this document)
 
@@ -46,17 +46,17 @@ Note: I had also tried with uWSGI but I had problems with SSL handshake, for whi
 
 I was thinking about some simple way to add UI and since I had just recently discovered [SocketIO](https://socket.io/) I wanted to try that. The basic architecture is a Python backend exposed with Flask-API with SocketIO support and a simple web page with SocketIO to exchange messages between the client and the server. I was very lucky to have found HTML+CSS code for drawing the cards from [Juha Lindtstedt](https://medium.com/@pakastin/javascript-playing-cards-part-2-graphics-cd65d331ad00) for which I am very grateful.
 
-+ *blackjack.py* - game logic split in the following classes:
-  + GameBlackJack
-  + Player, PlayerBlackJack, PlayerBlackJackHouse
++ *game21.py* - game logic split in the following classes:
+  + Game21
+  + Player, PlayerGame21, PlayerGame21House
   + Decks: stores N decks of cards and shuffling 
-  + CardBlackJack
+  + Game21Card
 + *main.py* - logic for playing game via a command line interface
-+ *blackjack_api.py* - logic for playing game via a web interface
++ *game21_api.py* - logic for playing game via a web interface
 + *templates/cards.html* - web game UI using JQuery and SocketIO for communication with the backend. The code for the communication is embedded inside HTML and is a total mess (TODO: refactoring)
 + *blackjack/static* - all the static CSS and *js files for displaying the cards + generic bootstrap files
 
-Unit tests have not been implemented yet and there is no error handling and (almost) zero input validation. Any bad input will break the game.
+Only the most important unit tests have been implemented and there is no error handling and (almost) zero input validation. Any bad input will break the game.
 
 #### Web interface
 
@@ -108,7 +108,7 @@ Nginx as reverse proxy:
     listen [::]:80;
     listen 80;
     server_name mydomain.org www.mydomain.org;
-    root /home/myusername/blackjack;
+    root /home/myusername/eenentwintgen;
     
     proxy_connect_timeout       605;
     proxy_send_timeout          605;
@@ -141,8 +141,8 @@ prerequisites:
     [Service]
     User=myusername
     Group=www-data
-    WorkingDirectory=/home/myusername/blackjack    
-    ExecStart=/usr/bin/gunicorn3 --workers 3 --bind unix:blackjack.sock -m 007 wsgi:app
+    WorkingDirectory=/home/myusername/eenentwintgen    
+    ExecStart=/usr/bin/gunicorn3 --workers 3 --bind unix:eenentwintgen.sock -m 007 wsgi:app
 
     [Install]
     WantedBy=multi-user.target
@@ -152,7 +152,7 @@ If you want to simplify things as much as possible it is also possible to direct
 
 ```
     [Unit]
-    Description=Blackjack Flask web server
+    Description=Eenentwintgen Flask web server
     After=network.target
     
     [Install]
@@ -161,8 +161,8 @@ If you want to simplify things as much as possible it is also possible to direct
     [Service]
     User=myusername
     PermissionsStartOnly=true
-    WorkingDirectory=/home/myusername/blackjack
-    ExecStart=/usr/bin/python3 blackjack_api.py
+    WorkingDirectory=/home/myusername/eenentwintgen
+    ExecStart=/usr/bin/python3 game21_api.py
     TimeoutSec=600
     Restart=on-failure
     RuntimeDirectoryMode=755
