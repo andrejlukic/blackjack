@@ -88,7 +88,7 @@ class Game21:
     def addplayer(self, player):
         """Adds a new player to the game.
         
-        Player must have a unique name and had to have bet money on this game
+        Player must have a unique name
         """
         if(player.money <= 0):
             raise                
@@ -120,7 +120,7 @@ class Game21:
         Arguments:
         move -- Game21.MOVE_HIT | Game21.MOVE_STAND
         
-        Functions returns True if player can do another move or False if player is bust or has hit Blackjack.
+        Functions returns True if player can do another move or False if player is bust or has hit 21.
         """
         
         if(move == Game21.MOVE_HIT):
@@ -168,7 +168,7 @@ class Game21:
                 if(not p.isbust()):
                     dbgmsg.append(self.playerwins(p)) #house is bust and player is not
                 else:
-                    dbgmsg.append(self.housewins(p)) #both house and player are bust so the houst wins 
+                    dbgmsg.append(self.housewins(p)) #both house and player are bust so the house wins 
             else: # house < 21
                 if(p.has21()): #TODO: unnecessary               
                     dbgmsg.append(self.playerwins(p)) #player wins
@@ -201,7 +201,7 @@ class Game21:
     def playerwins(self, player):
         """ Player gets bet amount """
         
-        amount = player.win()   #TODO: factor is more than 1.0 if blackjack                    
+        amount = player.win()   #TODO: factor is more than 1.0 if 21                    
         self.house.loose(amount)
         return "{} won".format(player.name)
           
@@ -275,6 +275,7 @@ class Game21:
     @classmethod
     def getactivemultiplayergames(cls):
         """ Helper method for UI - returns all active multiplayer game ids by looking at existing game files """
+        
         #sess_files = glob.glob("{}".format(Game21.SESSIONS_DIR)).sort(key=os.path.getmtime, reverse=True) # get game files and sort descending by date
         sess_files = os.listdir("{}".format(Game21.SESSIONS_DIR))
         #print('{1}: {0}'.format(sess_files,"{}".format(Game21.SESSIONS_DIR)))        
@@ -399,7 +400,7 @@ class Player:
     tie()
         called after a game round is over. Player's money is increased or decreased based on game result.        
     bet(amount)
-        called before a round starts to bet some money.
+        called before the second card is dealt to bet some money.
     prepareforgame()
         called after the round is over to reset the hand and bet amount
     getcard(card)
@@ -467,16 +468,16 @@ class Player:
 class PlayerGame21(Player):
     """Player of Game21
     
-    Player's hand is evaluated by the rules of blackjack.
+    Player's hand is evaluated by the rules of Game of 21.
 
     Methods
     -------
     
     isbust(), 
     has21()
-        player's hand can have special values of over 21 (bust) or 21 (blackjack)
+        player's hand can have special values of over 21 (bust) or 21 (Natural)
     cardsvalue()
-        player's hand is evaluated by the rules of blackjack
+        player's hand is evaluated by the rules of game of 21
     cardsdiff()
         difference between value of player's hand and target value of 21                
     """

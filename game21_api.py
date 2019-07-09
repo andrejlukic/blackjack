@@ -112,7 +112,7 @@ def placebet(data):
         socketio.emit('start_betting', json.dumps(payload), callback=messageReceived, room=game.gameid)
      
 def gamestart(game):
-    """ Start game of 21 after betting round hasbeen completed """
+    """ Start game of 21 after betting round has been completed """
     
     debugout('{1} - game start, bets placed = {2}'.format(game.players[0].name, game.gameid, game.betting_turn()))
      
