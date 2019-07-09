@@ -5,23 +5,28 @@ Simple command line interface for the game21 game.
 
 @author: Andrej
 '''
-from blackjack import Game21, PlayerGame21, PlayerGame21House
+from game21 import Game21, PlayerGame21, PlayerGame21House
 
 if __name__ == '__main__':
     dbg = input("(n)ew game or (l)oad state: ")    
     pn = input("\nplayer name: ")
     player = PlayerGame21(pn, 1000)  # init player
     house = PlayerGame21House()  #init house player
-    while(True):
-        bet_str = input("bet amount: ")
-        player.bet(int(bet_str))
+    while(True):        
         game = Game21(house)
+        game.addplayer(player)
         gid = game.dumpstate()
+        game.startgame()
+        print(game)
+        
+        bet_str = input("bet amount: ")
+        player.bet(int(bet_str))        
+        
         #print("\tdumped to {0}".format(gid))
         if(dbg == 'l'): # load previously saved state for debugging
             gid = input("game id:")
             game = Game21.getstate(gid)                        
-        game.addplayer(player)
+        
         oktocontinue = game.startgame() 
         print(game) 
         if(oktocontinue):  # player < 21        
