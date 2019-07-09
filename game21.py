@@ -133,7 +133,7 @@ class Game21:
         """ Called after one of the players has done the move to get the next player in order. The last player is always house. """
                 
         if(isinstance(self.playerturn, PlayerGame21House)):  # this should never happen
-            raise   #todo
+            raise Exception('Flow error - house already played')
         
         next_player = self.players.index(self.playerturn) + 1
         if(next_player < len(self.players)):
@@ -189,7 +189,7 @@ class Game21:
         """ Return the bet amount to player """
         
         player.tie()
-        return "It's a tie between house and {}".format(player.name)
+        return "{} tied".format(player.name)
 
     def housewins(self, player):
         """ House takes player's bet """
@@ -346,7 +346,7 @@ class Game21Card(Card):
         elif(self._card[0] == 'QUEEN'):
             return 2
         elif(self._card[0] == 'KING'):
-            return 4
+            return 3
         elif(self._card[0] == 'ACE'):
             return 11        
     
@@ -502,7 +502,7 @@ class PlayerGame21(Player):
                 aces += 1
         while(aces > 0 and cardsum > Game21.NATURAL): # count Aces as 1 instead until the sum is under 21
             cardsum -= 10
-            aces -= 1                            
+            aces -= 1                                
         return cardsum
     
     def cardsdiff(self):                                    
