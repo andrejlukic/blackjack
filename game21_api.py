@@ -17,6 +17,8 @@ from flask_socketio import SocketIO, join_room, leave_room
 app = Flask(__name__)
 socketio = SocketIO(app)
 
+DEFAULT_DECKS_NUM = 3   # default number of decks to start a game with
+
 @app.route("/", methods=['GET'])
 def frontpage():    
     return render_template('cards.html')
@@ -50,7 +52,7 @@ def addfirstplayer(data, methods=['GET', 'POST']):
     debugout('{1} first player, game type = {0}'.format(data['game_type'], data['player_name']))
     
     firstplayer = PlayerGame21(data['player_name'], 1000)
-    game = Game21(PlayerGame21House(), gameid = request.sid)
+    game = Game21(PlayerGame21House(), gameid = request.sid, num_decks=DEFAULT_DECKS_NUM)
     game.addplayer(firstplayer)
     
     if(data['game_type'] == 'singleplayer'):  #todo replace constant              
@@ -163,12 +165,14 @@ def gamerestart(data, methods=['GET', 'POST']):
     """
     
     gameid = data['gameid']    
-    debugout('{0} restart'.format(gameid))
-    game = Game21.getstate(gameid)    
+    debugout('{0} restart'.format(gameid))    
+    game = Game21.getstate(gameid)
+    debugout('Old state:\n{0}'.format(game))
     for o in game.observers:    #there might be observers waiting to be added to the game
         game.addplayer(o)
         game.removeplayer(o.name, as_observer = True)    
-    game.endgame()  # this cleans up the state for every player    
+    game.endgame()  # this cleans up the state for every player
+    debugout('New state:\n{0}'.format(game))    
     
     startbettinground(game)
 
@@ -235,8 +239,9 @@ def nextplayermove(game, previous_action):
         debugout(payload)
         game.dumpstate()        
         socketio.emit('player_move', json.dumps(payload), callback=messageReceived, room=game.gameid)
-    else:   # house is on the move and then game ends                
-        game.housemove()        
+    else:   # house is on the move and then game ends, house only moves if not all players are bust!
+        if(not game.allplayersbust()):                
+            game.housemove()        
         msg = game.settlebets()                  
         debugout(','.join(msg))
         payload = getpayload(game, ', '.join(msg), previous_action, False)

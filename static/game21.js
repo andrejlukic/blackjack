@@ -334,9 +334,9 @@
 		info_div.empty()
 		addbadge = ""
 		if(player.points == 21)
-			addbadge = "<span class=\"badge badge-pill badge-warning\" style=\"font-size: 1.3rem;\"> 21 </span>"
+			addbadge = "<span class=\"badge badge-pill badge-warning\" style=\"font-size: 1.0rem;\"> 21 </span>"
 		else if(player.points > 21)
-			addbadge = "<span class=\"badge badge-pill badge-dark\" style=\"font-size: 1.3rem;\"> BUST </span>"
+			addbadge = "<span class=\"badge badge-pill badge-dark\" style=\"font-size: 1.0rem;\"> BUST </span>"
 		if(player.name != "house")
 		{
 			info_div.append(player.name+"<br /><span class=\"badge badge-secondary\">"+player.bet_amount+"€ ("+player.money+"€)</span> "+addbadge)

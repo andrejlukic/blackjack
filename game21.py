@@ -85,7 +85,14 @@ class Game21:
         self.bets = 0
         self.playerturn = None
         self.gameid = gameid        
+    
+    def addadeck(self):
+        """Adds a new deck if not enough cards for the number of players in the game. Maximum is 3 players per deck"""
         
+        self.num_decks += 1
+        print('+1 deck and reshuffling')
+        self.decks = Decks(self.num_decks)
+    
     def addplayer(self, player, as_observer = False):
         """Adds a new player to the game.
         If a game is multiplayer and a round is underway then a player is added as observer until the new round starts.
@@ -101,9 +108,11 @@ class Game21:
         
         if(not as_observer):        
             self.players.append(player)
+            if( len(self.players) > self.num_decks * 3):    # maximum is 3 players per deck. Add a new deck if additional player joins.
+                self.addadeck()
         else:
             self.observers.append(player)
-
+    
     def isgameover(self):
         """Checks if either house >= 21 or all the players have >= 21"""
         
@@ -119,6 +128,12 @@ class Game21:
                 allplayersbust = False
                 
         return allplayersbust or allplayers21
+    
+    def allplayersbust(self):        
+        for p in self.players:            
+            if(not p.isbust()):
+                return False
+        return True
     
     def playermove(self, player, move):
         """Player can either take a new card (hit) or wait (stand).
@@ -151,7 +166,7 @@ class Game21:
     def housemove(self):
         """ House must stand if the total is 17 or more and take a card if the total is 16 or under """
         
-        while(self.house.cardsvalue() < 17):                
+        while(self.house.cardsvalue() < 17):
                 self.house.getcard(self.decks.popcard())                 
         self.playerturn = None  #house is the last player
             
@@ -244,13 +259,15 @@ class Game21:
                 bet_turn += 1
         return bet_turn
             
-    def endgame(self):
+    def endgame(self, reshuffle = False):
         """ Prepare for next round by resetting hands and bets for each of the players. Reshuffle cards."""
         
         self.house.prepareforgame()
         for p in self.players:
             p.prepareforgame()
-        self.decks = Decks(self.num_decks) #TODO: is it ok to reshuffle after every round?
+            
+        if(reshuffle or len(self.decks.decks) <= 0.25 * self.num_decks * Decks.newdecksize()): # reshuffle when 25% of cards reached
+            self.decks = Decks(self.num_decks)
         self.playerturn = None
     
     def gamehasstarted(self):
@@ -326,7 +343,7 @@ class Game21:
         return gdict
         
     def __repr__(self):            
-        return "\n{1} {2}".format(len(self.decks.decks)/48, self.house, self.players)
+        return "\n{} Decks = {} (cards full = {}), Cards left = {}\n{} {}".format(self.gameid, self.num_decks, self.num_decks * Decks.newdecksize(), len(self.decks.decks), self.house, self.players)
 
 class Card:
     """Card base class
