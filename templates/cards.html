@@ -57,6 +57,7 @@
 			<span><h3>Game of 21</h3>
 			<small class="form-text text-muted gamehint">Please enter your name and choose a game</small>
 			</span>
+			<div class="multplayer-step-one">
 			<div class="col-auto namerow">
 			  <label class="sr-only" for="inlineFormInput">Name</label>
 			  <input class="form-control mb-2" id="player_name" type="text" placeholder="Please enter your name" value="Your name">			  
@@ -68,8 +69,8 @@
 			  <div style="clear:both"></div>	
 			</div>
 
-			<div class="col-auto multiplayerform">
-			  <button type="submit" class="btn btn-primary mb-2 startmultplayer" value="singleplayer">New game</button>			  
+			<div class="col-auto multiplayerform">			  
+			  <button class="btn btn-primary mb-2 createmultplayergame" value="singleplayer">New game</button>			  
 			<div id="multiplayer-dropdown" class="btn-group">
 			  <button type="button" class="btn btn-success dropdown-toggle multigameselect" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
 				Join existing
@@ -78,46 +79,47 @@
 			  </div>
 			</div>
 			</div>
+			</div>			
 			</div>
 			<input type="hidden" id="gameid" name="gameid" value="">
 			<input type="hidden" id="gametype" name="gametype" value="">
 			<input type="hidden" id="pid" name="pid" value="">
-		  </div>
-		
-		<button type="button" class="btn btn-warning exitgame"style="float:left">
+		  </div>		
+		<button type="button" class="btn btn-warning exitgame" style="float:left">
 				Exit
 		</button>
 		</div>
     </div>
   </div>
 		
-   <div style="clear:left" /> 
+   <div style="clear:left"></div>
 		
 	<div class="gamearea">
 		<div class="deck container">
 		<div class="row" style="margin-bottom:20px">
 					<div class="col-centered" style="text-align:center">
 						<span><h3 class="game-players">Game of 21</h3></span>						
-						<div class="output form-text text-muted"></div>						
+						<div class="output form-text text-muted"></div>	
+						<button class="btn btn-primary mb-2 startmultplayergame" value="singleplayer">Start game</button>						
 					</div>
 				</div>			
 			<div class="row">
-					<div class="deck_box col-centered">
-						<div class="deck_house_info"></div>
-						<div class="deck_house"></div>
-					</div>
+				<div class="deck_box col-centered">
+					<div class="deck_house_info"></div>
+					<div class="deck_house"></div>
 				</div>
-				<div class="row">
-					<div class="deck_box col-left deck_box_1">
-						<div class="deck_player_info"></div>
-						<div class="deck_player" style="position:relative"></div>
-						
-					</div>
-					<div class="deck_box col-right deck_box_2">
-						<div class="deck_player2_info"></div>
-						<div class="deck_player2"></div>
-					</div>
-				</div>					
+			</div>
+			<div class="row players_container">
+				<!--div class="deck_box col-left deck_box_1">
+					<div class="deck_player_info"></div>
+					<div class="deck_player" style="position:relative"></div>
+					
+				</div>
+				<div class="deck_box col-right deck_box_2">
+					<div class="deck_player2_info"></div>
+					<div class="deck_player2"></div>
+				</div -->
+			</div>					
 			</div>
 		 
 		 

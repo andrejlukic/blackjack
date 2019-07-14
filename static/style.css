@@ -61,20 +61,20 @@ body {
 
 div.deck_box
 {
-		min-width:10em;
+	
 }
 div.deck
 {
 	margin-top: 30px;
 	clear: left;	
 }
-div.deck_player_info, div.deck_player2_info, div.deck_house_info 
+div.deck_player_info, div.deck_house_info 
 {
 	text-align: left;	
 	margin-left: 5px;
 	padding-bottom: 10px;	
 }
-div.deck_player, div.deck_player2, div.deck_house
+div.deck_player, div.deck_house
 {	
 	position:relative;	
 	height:90px;
@@ -130,11 +130,15 @@ button.singleplayer
 {
 	margin-right: 15px;
 }
-button.singleplayer, button.multiplayer, button.startmultplayer, div.multiplayer-dropdown
+button.singleplayer, button.multiplayer, button.startmultplayergame, button.createmultplayergame, div.multiplayer-dropdown
 {	
 	margin-left:0;
 }
-button.startmultplayer
+button.startmultplayergame
+{
+	margin-top:15px !important;
+}
+button.createmultplayergame, button.startmultplayergame
 {
 	margin-right:10px;
 	margin-bottom:0px !important;

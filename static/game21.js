@@ -1,6 +1,7 @@
 
 	  $("#playeractions").hide()
 	  $("div.multiplayerform").hide()
+	  $("button.startmultplayergame").hide()
 	  $( 'button.exitgame' ).hide()
 	  $( 'div.bettingform' ).hide()
 	  $( 'div.gamearea' ).hide()
@@ -18,7 +19,7 @@
 		if($(this).val() == 'singleplayer') {
 			startgame('singleplayer')
 			$("div.deck_box_2").remove()
-			$("div.deck_box_1").removeClass("col-left").addClass("col-centered");			
+			$("div.deck_box_1").removeClass("col").addClass("col-centered");			
 		}
 		else
 		{			
@@ -27,9 +28,32 @@
 		}
 	});
 	
-	$("button.startmultplayer").click(function() {
-		$("div.gamechoose").hide()	
+	$("button.createmultplayergame").click(function() {
+		$('input#pid').val($( 'input#player_name' ).val())
+		$( 'div.gamestartform' ).hide()
+		$( 'div.gamearea' ).show()
+		$("button.startmultplayergame").show()		
 	    startgame('multiplayer')				
+	});
+	
+	$("button.startmultplayergame").click(function() {		
+	    $( 'div.bettingform' ).hide()		
+		$( 'button.exitgame' ).show()
+		$( 'button.startmultplayergame' ).hide()		
+		$( 'div.deck_player' ).empty()
+		  $( 'div.deck_player2' ).empty()
+		  $( 'div.deck_house' ).empty()		        
+		  let player_name = $( 'input#player_name' ).val()		  
+		  let gameid = $( 'input#gameid' ).val()		  
+		  $( 'input#pid' ).val(player_name)		  
+		  $( 'input#gametype' ).val(gametype)
+		  
+		  socket.emit( 'start_multiplayer_game', {
+			player_name : player_name,			
+			game_type: gametype,
+			gameid: gameid
+		  
+		} )
 	});
 	
 	$("button.exitgame").click(function() {
@@ -38,12 +62,18 @@
 		$("div.gamechoose").show()
 		$( 'button.exitgame' ).hide()
 		$( 'div.bettingform' ).hide()
-		$( 'div.gamearea' ).hide()		
+		$( 'div.gamearea' ).hide()
+
+		socket.emit( 'exit_game', {
+			player_name : $( 'input#player_name' ).val(),
+			gameid: $( 'input#gameid' ).val()
+		  
+		} )		
 	});
 	
 	function startgame(gametype) {	
-		$( 'div.bettingform' ).hide()
-		$( 'div.gamearea' ).show()	
+		$( 'div.bettingform' ).hide()		
+		$( 'button.exitgame' ).show()			
 		$( 'div.deck_player' ).empty()
 		  $( 'div.deck_player2' ).empty()
 		  $( 'div.deck_house' ).empty()		        
@@ -95,6 +125,7 @@
 		  $( 'div.deck_player2' ).empty()
 		  $( 'div.deck_house' ).empty()
 			$( 'div.bettingform' ).hide()
+			$( 'div.gamestartform' ).hide()
 		$( 'div.gamearea' ).show()			
 		  gameid = $(this).attr('value') //.text()
           //e.preventDefault()
@@ -132,22 +163,28 @@
 		
 	  socket.on( 'player_move', function( msg ) {        
 		obj = JSON.parse(msg)		
-        updateCards(obj)
-		updateInfo(obj)		
+        updateCards(obj)		
       })
 		
 	  socket.on( 'start_betting', function( msg ) {
 		$( 'button.exitgame' ).show()
+		$( 'div.gamearea' ).show()
 		$( 'div.output' ).empty()
 		// alert(msg)
 		$( 'div.gamestartform' ).hide()
-		
 		obj = JSON.parse(msg)		
+		addPlayersContainer(obj.players)
 		$( 'input#gameid' ).val(obj.gameid)
 		updatePlayersTitle(obj)
-        updateCards(obj)
-		updateInfo(obj)
+        updateCards(obj)		
 		updateBetForm(obj)		
+      })
+	  
+	  socket.on( 'player_exited', function( msg ) {
+		  obj = JSON.parse(msg)
+		  $("#playeractions").hide()
+		  $( 'div.bettingform' ).hide()
+		$( 'div.output' ).append( '<div>'+obj.msg+' exited the game. Game will restart.</div>' )
       })
 	  
       socket.on( 'my response', function( msg ) {
@@ -158,60 +195,65 @@
       })
 	  
 	  socket.on( 'wait_others', function( msg ) {  
-		$( 'div.output' ).append( '<div>waiting for others to join ...</div>' )
+		$( 'div.output' ).append( '<div>After all the players have joined press \"Start game\".</div>' )
+		obj = JSON.parse(msg)
+		$( 'input#gameid' ).val(obj.gameid)
 		$("#playeractions").hide()		
+      })
+	  
+	  socket.on( 'player_joined', function( msg ) {  
+		obj = JSON.parse(msg)
+		//alert(obj.gameactive)		
+		console.log('Player joined. Gameactive='+obj.gameactive+', obj.players.length='+obj.players.length+'obj.observers='+obj.observers)
+		if(!obj.gameactive)
+		{
+			$( 'div.output' ).append( '<div> '+obj.players[obj.players.length-1].name+' joined</div><div>Waiting on '+obj.players[0].name+' to start game ...</div>')					
+		}
+		else if(obj.observers && obj.observers.length>0)
+		{
+			$( 'div.output' ).append( '<div> '+obj.observers[obj.observers.length-1].name+' joined and waiting until the current round ends</div>' )
+			
+		}
+		
       })
 	  
 	  socket.on( 'game_start', function( msg ) {		
 		$( 'div.bettingform' ).hide();
 		obj = JSON.parse(msg)		
-        if( typeof obj.player !== 'undefined' ) {		 
-		  myturn = $('input#pid').val() == obj.player.name
-		  multiplayer = obj.player2 != null
+        if( typeof obj.players !== 'undefined' ) {		 
+		  multiplayer = obj.players.length > 1
+		  myturn = $('input#pid').val() == obj.player_turn
           //$( 'div.output' ).append( '<div>'+(multiplayer ? 'Multiplayer' : 'Singleplayer')+' game start</div><div>'+(myturn ? 'my' : obj.player.name)+' turn</div>' )
 		$( 'input#gameid' ).val(obj.gameid)
-		updateCards(obj)
-		updateInfo(obj)
+		updateCards(obj)		
         }
       })
 	  function updatePlayersTitle(obj)
 	  {
-		  multiplayer = obj.player2 != null
-		  names = obj.player.name
+		  multiplayer = obj.players.length > 1
+		  names = obj.players[0].name // first player
 		  if(multiplayer)
 		  {
-			  names += "& "+obj.player2.name
+			  for(pindex=1;pindex<obj.players.length;pindex++)
+			  {
+				names += ", "+obj.players[pindex].name  
+			  }
+			  
 		  }
 		  $("h3.game-players").text(names +" vs House")
 	  }
 	  function updateCards(obj) {
-	    //alert(obj)
-	    multiplayer = obj.player2 != null
+		  
+	    
+	    multiplayer = obj.players.length > 1
 		myturn = $('input#pid').val() == obj.player_turn
-		mefirst = !multiplayer || $('input#pid').val() == obj.player.name
 		
-		
-		$( 'div.deck_player' ).empty()
-		$( 'div.deck_player2' ).empty()
-		$( 'div.deck_house' ).empty()
-		$("#playeractions").hide()
-		
-		if(mefirst)
+		generateInfoSpan($( 'div.deck_house_info' ), obj.house)
+		for(pindex=0;pindex<obj.players.length;pindex++)
 		{
-			addCards(obj.player.hand, $( 'div.deck_player' ), false, !multiplayer)			
-			
-			if(multiplayer)
-			{
-				addCards(obj.player2.hand, $( 'div.deck_player2' ), false, !multiplayer)				
-			}
-						
+			addCards(obj.players[pindex].hand, $( 'div.deck_player_'+(pindex+1) ), false, !multiplayer)
+			generateInfoSpan($( 'div.deck_player_info_'+(pindex+1) ), obj.players[pindex])			
 		}
-		else
-		{
-			addCards(obj.player.hand, $( 'div.deck_player2' ), false, !multiplayer)
-			addCards(obj.player2.hand, $( 'div.deck_player' ), false, !multiplayer)			
-		}
-		//$( 'div.deck_house' ).append(createCard(obj.house.hand[0]));		
 		
 		if(myturn)
 		{
@@ -220,6 +262,7 @@
 		}
 		else
 		{
+			$("#playeractions").hide()
 			$("div.output").text("Waiting on other players ...")
 		}		
 		
@@ -228,36 +271,8 @@
 			$("div.output").text("Round is over. "+obj.msg)
 			$("#playeractions").hide()	
 					
-			addCards(obj.house.hand, $( 'div.deck_house' ), false, true)
-			
-			counter=6
-			i = window.setInterval(function(){
-				if(counter <= 5)
-				{
-						$("div.output").text("Next round in "+counter+" secs ...")
-				}			  
-			  counter--			 
-			}, 1000);
-			
-			setTimeout(
-			  function() 
-			  {
-				  window.clearInterval(i) 
-				  
-				  $( 'div.deck_player' ).empty()
-				  $( 'div.deck_player2' ).empty()
-				  $( 'div.deck_house' ).empty()
-				  // $( 'div.output' ).empty()
-				  
-				  if(mefirst)
-				  {				  
-					  socket.emit( 'game_restart', {					
-						gameid : obj.gameid,
-						bet: $( 'input#bet_amount' ).val() // that's a hack because the GUI for taking bets every round is not there yet
-					} )
-				  }
-				  
-			  }, 6000);
+			addCards(obj.house.hand, $( 'div.deck_house' ), false, true)			
+			countdownrestartgame(obj, 6)
 			
 		}
 		else
@@ -268,7 +283,8 @@
 
 	}
 	
-	socket.on( 'display_multiplayer_games', function( msg ) {	   
+	socket.on( 'display_multiplayer_games', function( msg ) {
+		
 	   obj = JSON.parse(msg)	
 		// $( 'div.output' ).append( '<div><b style="color: #000">'+obj.games+'</div>' )
 		$("#playeractions").hide()	
@@ -281,52 +297,41 @@
 			$("div.dropdown-menu").append("<a class=\"dropdown-item\" value=\""+g+"\">"+n+"</a>")
 		}		
 		$("div#multiplayer-dropdown").show()
-      })
-	  
-	  function updateInfo(obj) {
-	    //alert(obj)
-	    multiplayer = obj.player2 != null
-		myturn = $('input#pid').val() == obj.player_turn
-		mefirst = !multiplayer || $('input#pid').val() == obj.player.name
-		
-		
-		$( 'div.deck_player_info' ).empty()
-		$( 'div.deck_player2_info' ).empty()
-		$( 'div.deck_house_info' ).empty()
-		//$("div.output").empty()
-		
-		if(mefirst)
-		{
-			// $( 'div.deck_player_info' ).append(obj.player.name+'<span class=\"badge\">'+obj.player.money+'€</span>')
-			generateInfoSpan($( 'div.deck_player_info' ), obj.player)
-			if(multiplayer)
-			{
-				generateInfoSpan($( 'div.deck_player2_info' ), obj.player2)				
-			}
-		}
-		else
-		{
-			generateInfoSpan($( 'div.deck_player2_info' ), obj.player)			
-			if(multiplayer)
-			{
-				generateInfoSpan($( 'div.deck_player_info' ), obj.player2)				
-			}
-		}
-		
-		if(myturn)
-		{
-			$( 'div.deck_player_info' ).addClass("myturn");
-		}
-		else
-		{
-			$( 'div.deck_player_info' ).removeClass("myturn");
-		}
-		
-		generateInfoSpan($( 'div.deck_house_info' ), obj.house)		
-	}	
-	
-	function generateInfoSpan(div, player)
+      })	  
+	 
+	function countdownrestartgame(obj, delaysecs)
 	{
+		counter=delaysecs
+		i = window.setInterval(function(){
+			if(counter <= (delaysecs-1))
+			{
+					$("div.output").text("Next round in "+counter+" secs ...")
+			}			  
+		  counter--			 
+		}, 1000);
+		
+		setTimeout(
+		  function() 
+		  {
+			  window.clearInterval(i) 
+			  
+			  $( 'div.deck_player' ).empty()
+			  $( 'div.deck_player2' ).empty()
+			  $( 'div.deck_house' ).empty()
+			  // $( 'div.output' ).empty()
+			  
+			  if($('input#pid').val() == obj.players[0].name)
+			  {				  
+				  socket.emit( 'game_restart', {					
+					gameid : obj.gameid
+				} )
+			  }
+			  
+		  }, delaysecs*1000);
+	}
+	function generateInfoSpan(info_div, player)
+	{
+		info_div.empty()
 		addbadge = ""
 		if(player.points == 21)
 			addbadge = "<span class=\"badge badge-pill badge-warning\" style=\"font-size: 1.3rem;\"> 21 </span>"
@@ -334,16 +339,17 @@
 			addbadge = "<span class=\"badge badge-pill badge-dark\" style=\"font-size: 1.3rem;\"> BUST </span>"
 		if(player.name != "house")
 		{
-			div.append(player.name+"<br /><span class=\"badge badge-secondary\">"+player.bet_amount+"€ ("+obj.player.money+"€)</span> "+addbadge)
+			info_div.append(player.name+"<br /><span class=\"badge badge-secondary\">"+player.bet_amount+"€ ("+player.money+"€)</span> "+addbadge)
 		}
 		else
 		{
-			div.append(player.name+"<br /><span class=\"badge badge-secondary\">"+obj.player.money+"€</span> "+addbadge)
+			info_div.append(player.name+"<br /><span class=\"badge badge-secondary\">"+player.money+"€</span> "+addbadge)
 		}
 		
 	}
 	function addCards(hand, containerDiv, hideLast, horizontal)
-	{
+	{	
+		containerDiv.empty()
 		for(i=0;i<hand.length;i++)
 		{
 			if(hideLast && (i == hand.length-1))
@@ -381,5 +387,21 @@
 			$( 'div.bettingform' ).hide();
 			$("div.output").text("Waiting on other players to place their bets ...")
 		}		
+	}
+	
+	function addPlayersContainer(players)
+	{
+		players_div = $( 'div.players_container' )
+		players_div.empty()
+		if(players)		
+		{
+			for(pindex=0;pindex<players.length;pindex++)
+			{
+				console.log('Adding container for player '+players[pindex].name);
+				player_box = '<div class=\"deck_box col deck_box_'+(pindex+1)+'\"><div class=\"deck_player_info deck_player_info_'+(pindex+1)+'\"></div><div class=\"deck_player deck_player_'+(pindex+1)+'\" style=\"position:relative\"></div>'
+				players_div.append(player_box)
+			}
+		}
+	else{ return }
 	}
 	

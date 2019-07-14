@@ -11,7 +11,8 @@ import json
 from flask import Flask, render_template, request
 from pathlib import Path    # for dumping and reloading state of the game
 from game21 import Game21, PlayerGame21, PlayerGame21House
-from flask_socketio import SocketIO, join_room
+import time # timer between restarting the game
+from flask_socketio import SocketIO, join_room, leave_room
 
 app = Flask(__name__)
 socketio = SocketIO(app)
@@ -32,7 +33,7 @@ def on_connected(json, methods=['GET', 'POST']):
 def list_games(data, methods=['GET', 'POST']):
     debugout('{0}: list multiplayer games'.format(data['player_name'], data['bet_amount']))    
     json_response = json.dumps( Game21.getactivemultiplayergames() )
-    socketio.emit('display_multiplayer_games', json_response, callback=messageReceived)
+    socketio.emit('display_multiplayer_games', json_response, callback=messageReceived, room = request.sid)
        
 @socketio.on('addfirstplayer')
 def addfirstplayer(data, methods=['GET', 'POST']):
@@ -59,11 +60,14 @@ def addfirstplayer(data, methods=['GET', 'POST']):
         join_room(game.gameid)
         debugout("{}: creates room {}".format(firstplayer.name, game.gameid))
         game.dumpstate() # save the game state
-        socketio.emit('wait_others', None, callback=messageReceived) # TODO: maybe unicast would be better here ...
+        socketio.emit('wait_others', json.dumps(getpayload(game, None, None, True)), callback=messageReceived, room=game.gameid)
 
 @socketio.on('join_game')
 def joingame(data, methods=['GET', 'POST']):
-    """player joins the game (only for multiplayer game)    
+    """player joins the game (only for multiplayer game)
+    
+    Player can join an active game - in this case he must wait until the current round is over and then he starts with the new round.
+    Otherwise player is joining a new game and the game will start when the game creator starts it.
     
     PARAMETERS:
     gameid -- id of the multiplayer game    
@@ -72,19 +76,39 @@ def joingame(data, methods=['GET', 'POST']):
        
     gameid = data['gameid']
     player_name = data['player_name']    
-    debugout('{0} {1} joined'.format(gameid, player_name))
+    debugout('{0} {1} wants to join'.format(gameid, player_name))
         
     secondplayer = PlayerGame21(player_name, 1000)        
-    game = Game21.getstate(gameid) 
-    game.addplayer(secondplayer)
-    game.dumpstate()
+    game = Game21.getstate(gameid)
+    debugout('{0} Game => isactive={1} hasended={2} hasstarted={3}'.format(gameid, game.gameisactive(), game.gamehasended(), game.gamehasstarted()))
+    if(not game.gameisactive()): # player is joining a new game
+        game.addplayer(secondplayer)
+    else:    # player is joining an already active game, must wait until round ends
+        game.addplayer(secondplayer, as_observer = True)    
     join_room(gameid)
+    game.dumpstate() # save the game state
+    socketio.emit('player_joined', json.dumps(getpayload(game, None, None, True)), callback=messageReceived, room=game.gameid)
+    # startbettinground(game)
+
+@socketio.on('start_multiplayer_game')
+def startmultiplayergame(data, methods=['GET', 'POST']):
+    """After all the players had joined player starts the game    
+    
+    PARAMETERS:
+    gameid -- id of the multiplayer game    
+    player_name -- name of the joined player
+    """
+       
+    gameid = data['gameid']
+    player_name = data['player_name']    
+    debugout('{0} {1} starts the multiplayer game'.format(gameid, player_name))
+    game = Game21.getstate(gameid)
     startbettinground(game)
 
 def startbettinground(game):
     """ All players place bets """
     game.startgame() # deal the first card  
-    game.dumpstate()
+    game.dumpstate()    
     debugout('{0} start betting round with player {1}'.format(game.gameid, game.betting_turn()))
     socketio.emit('start_betting', json.dumps(getpayload(game, None, None, True)), callback=messageReceived, room=game.gameid)
      
@@ -126,7 +150,7 @@ def gamestart(game):
         game.nextplayer()    
 
     payload = getpayload(game, msg, None, oktocontinue)
-    #debugout('{0} send response to room'.format(gameid, payload))
+    #debugout('{0} send response to room {1}'.format(game.gameid, payload))
     game.dumpstate()
     socketio.emit('game_start', json.dumps(payload), callback=messageReceived, room=game.gameid)
     
@@ -140,9 +164,33 @@ def gamerestart(data, methods=['GET', 'POST']):
     
     gameid = data['gameid']    
     debugout('{0} restart'.format(gameid))
-    game = Game21.getstate(gameid)
+    game = Game21.getstate(gameid)    
+    for o in game.observers:    #there might be observers waiting to be added to the game
+        game.addplayer(o)
+        game.removeplayer(o.name, as_observer = True)    
     game.endgame()  # this cleans up the state for every player    
     
+    startbettinground(game)
+
+@socketio.on('exit_game')
+def playerexit(data, methods=['GET', 'POST']):
+    """Player exits game 
+    
+    PARAMETERS:
+    gameid -- id of the game
+    """
+    
+    gameid = data['gameid']
+    player_name = data['player_name']   
+    debugout('{0} player {1} exits'.format(gameid, player_name))
+    game = Game21.getstate(gameid)
+    game.removeplayer(player_name)
+    leave_room(game.gameid)
+    game.endgame()  # this cleans up the state for every player    
+    debugout('{0}'.format(game))
+    
+    socketio.emit('player_exited', json.dumps(getpayload(game, '{0}'.format(player_name), None, True)), callback=messageReceived, room=game.gameid)
+    time.sleep(8)
     startbettinground(game)
     
 @socketio.on('player_move')
@@ -162,7 +210,7 @@ def playermove(data, methods=['GET', 'POST']):
        
     game = Game21.getstate(gameid)
     if(game.playerturn.name != name):   # this shold not occur
-        raise   #TODO: implement exception here
+        raise Exception('turn is on: {0} not on {1}'.format(game.playerturn, name))  #TODO: implement exception here
     
     playerfinished = game.playermove(game.playerturn, action)
     if(not playerfinished): # player is still on the move
@@ -207,28 +255,25 @@ def cleanup():
         #os.remove(fs)
 
 def getpayload(game, msg, action, uistate):
-    player1_data = game.players[0].toDict()
-    if(len(game.players) > 1):
-        player2_data =  game.players[1].toDict()
-    else:
-        player2_data =  None
     
-    turn = None    
-    
+    turn = None
     if(game.betting_turn() >= len(game.players)):
         betting_turn_name = None
     else:
         betting_turn_name = game.players[game.betting_turn()].name
+        
     if(game.playerturn):
-        turn = game.playerturn.name 
-    return {'player': player1_data, 
-            'player2': player2_data, 
+        turn = game.playerturn.name
+     
+    return {'players': [p.toDict() for p in game.players], 
+            'observers': [p.toDict() for p in game.observers], 
             'house': game.house.toDict(),
             'betting_turn': betting_turn_name,
             'action':action, 
             'gameid':game.gameid, 
             'player_turn': turn, 
-            'game_state': uistate, 
+            'game_state': uistate,
+            'gameactive': game.gameisactive(), 
             'msg': msg }
 
 def debugout(msg):

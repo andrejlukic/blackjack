@@ -81,12 +81,14 @@ class Game21:
         self.house.prepareforgame()       
         self.decks = Decks(num_decks)
         self.players = []
+        self.observers = []
         self.bets = 0
         self.playerturn = None
         self.gameid = gameid        
         
-    def addplayer(self, player):
+    def addplayer(self, player, as_observer = False):
         """Adds a new player to the game.
+        If a game is multiplayer and a round is underway then a player is added as observer until the new round starts.
         
         Player must have a unique name
         """
@@ -95,8 +97,12 @@ class Game21:
         if(player in self.players):
             raise
                 
-        player.prepareforgame() # reset player state in case he had played a round before             
-        self.players.append(player)
+        player.prepareforgame() # reset player state in case he had played a round before     
+        
+        if(not as_observer):        
+            self.players.append(player)
+        else:
+            self.observers.append(player)
 
     def isgameover(self):
         """Checks if either house >= 21 or all the players have >= 21"""
@@ -247,6 +253,24 @@ class Game21:
         self.decks = Decks(self.num_decks) #TODO: is it ok to reshuffle after every round?
         self.playerturn = None
     
+    def gamehasstarted(self):
+        """ Game has started if any cards have been dealt """
+        
+        if(len(self.decks.decks) < self.num_decks * Decks.newdecksize()):
+            return True
+        else:
+            return False
+
+    def gamehasended(self):
+        """ Game has ended when it is nobody's turn any more """
+        
+        return self.playerturn is None and self.betting_turn() >= len(self.players)
+    
+    def gameisactive(self):
+        """ Game is active if it has started and not yet ended """
+        
+        return self.gamehasstarted() and not self.gamehasended()
+            
     def ismultiplayergame(self):
         return self.multiplayer
     
@@ -255,7 +279,16 @@ class Game21:
             if(p.name.lower() == pname.lower()):
                 return p
         raise   # TODO
-        
+    
+    def removeplayer(self, player_name, as_observer = False):
+        """ Removes player from the game. 
+        Player can also only be an observer, in that case he is removed from observers.
+        """          
+        if(not as_observer):
+            self.players = [p for p in self.players if(p.name != player_name) ]
+        else:
+            self.observers = [p for p in self.observers if(p.name != player_name) ]
+           
     def dumpstate(self):
         if(not os.path.isdir(Game21.SESSIONS_DIR)):
             os.mkdir(Game21.SESSIONS_DIR)
@@ -384,6 +417,10 @@ class Decks:
         card = self.decks.pop()
         card.facedown = facedown
         return card
+    
+    @classmethod
+    def newdecksize(cls):
+        return len(Game21Card.RANK) * len(Game21Card.SUIT)
     
     def __repr__(self):            
         return "{}".format([c.getval() for c in self.decks if not c.facedown])
