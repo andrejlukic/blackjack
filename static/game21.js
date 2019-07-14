@@ -17,8 +17,7 @@
 	$("button.gamechoose").click(function() {
 		$("div.gamechoose").hide()		
 		if($(this).val() == 'singleplayer') {
-			startgame('singleplayer')
-			$("div.deck_box_2").remove()
+			startgame('singleplayer')			
 			$("div.deck_box_1").removeClass("col").addClass("col-centered");			
 		}
 		else
@@ -395,10 +394,15 @@
 		players_div.empty()
 		if(players)		
 		{
+			position_class = "col-centered"
+			/*if(players.length == 1)
+			{
+					position_class = "col-centered"
+			}*/
 			for(pindex=0;pindex<players.length;pindex++)
 			{
 				console.log('Adding container for player '+players[pindex].name);
-				player_box = '<div class=\"deck_box col deck_box_'+(pindex+1)+'\"><div class=\"deck_player_info deck_player_info_'+(pindex+1)+'\"></div><div class=\"deck_player deck_player_'+(pindex+1)+'\" style=\"position:relative\"></div>'
+				player_box = '<div class=\"deck_box '+position_class+' deck_box_'+(pindex+1)+'\"><div class=\"deck_player_info deck_player_info_'+(pindex+1)+'\"></div><div class=\"deck_player deck_player_'+(pindex+1)+'\" style=\"position:relative\"></div>'
 				players_div.append(player_box)
 			}
 		}

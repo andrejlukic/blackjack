@@ -77,7 +77,9 @@ div.deck_player_info, div.deck_house_info
 div.deck_player, div.deck_house
 {	
 	position:relative;	
-	height:90px;
+	height:5em;
+	min-width:4.7em;
+	max-width:5em;
 }
 div#playeractions
 {
