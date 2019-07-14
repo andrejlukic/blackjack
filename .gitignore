@@ -107,3 +107,5 @@ sessions/
 .project
 .pydevproject
 .settings/
+templates/cards-old.html
+templates/cards2.html

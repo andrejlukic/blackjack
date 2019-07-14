@@ -1,11 +1,12 @@
 .card {
   font-family:Times New Roman !important;
-  line-height:1.0 !important;
+  font-size: 1em;
+  line-height:0.8 !important;
   
   display: inline-block;
   position: relative;
-  width: 5em;
-  height: 7em;
+  width: 4em;
+  height: 5em;
   background-color: #ffffff;
   box-shadow: 0 0.0625em 0.125em rgba(0, 0, 0, 0.15);
   border-radius: 0.25em;
@@ -17,30 +18,40 @@
 .card-topleft {
   position: absolute;
   top: 0.2em;
-  left: 0.65em;
+  left: 0.4em;
 }
 .card-bottomright {
   position: absolute;
   bottom: 0.2em;
-  right: 0.65em;
+  right: 0.4em;
   transform: rotate(180deg);
 }
-.card-corner-rank, .card-corner-suit {
+.card-corner-rank, .card-corner-suit {
   width: 1em;
   text-align: center;
   transform: translate(-50%, 0);
 }
 
 .card-face-down {
+	font-size: 1em;
 	background-image: url(data:image/gif;base64,R0lGODlhJAAkAJEAAOjFsezdztOKbL5QKCH5BAAAAAAALAAAAAAkACQAAAL/HC4RAqm/mmLHyHmAbczB11Ea8ombJKSgKo6Z17pXFznmS1JptiX0z3vVhpEKDoUIkoa0olGIUeZUk1RI6Yn2mh/FDAt6frOrRRTqXPpsVLYugzxaVy+YcBdnoWPZOT0E4eckQtZFZBjWoHixQFWl6Nhol6R2p1Okt5TGaEWZA6fjiMdhZgPHeWrTWGVq+jTZg1HYyAEWKLYzmyiGKoUimilz+YYryyTlg5RcDJSAbNx0Q7lMcbIGEyzTK8zVdfVaImzs/QV+prYqWWW2ObkoOApM/Em/rUlIm7fijs8a2EEKEaZ3AsMUgneEU6RcpJbZ27aGHkAO2Ors8xQH1IR0Bn5YnOtVAAA7); /* image is "Pattern 069" from http://www.squidfingers.com/patterns/ */
   display: inline-block;
   position: relative;
-  width: 5em;
-  height: 7em;
+  width: 4em;
+  height: 5em;
   background-color: #999999;
   box-shadow: 0 0.0625em 0.125em rgba(0, 0, 0, 0.15);
   border-radius: 0.25em;
   margin-left: 5px;
+}
+.moveover
+{
+	position: relative;
+	right: 4em;
+}
+html{
+    min-height:100%;/* make sure it is at least as tall as the viewport */	
+    position:relative;
 }
 
 body {
@@ -48,15 +59,9 @@ body {
   background-color: #76E19D;
 }
 
-div#multiplayer-dropdown
-{
-	margin-bottom:8px;
-	margin-left:5px;
-}
 div.deck_box
 {
-	float:left;
-	margin-right: 50px;
+		min-width:10em;
 }
 div.deck
 {
@@ -67,13 +72,17 @@ div.deck_player_info, div.deck_player2_info, div.deck_house_info
 {
 	text-align: left;	
 	margin-left: 5px;
-	padding-bottom: 10px;
+	padding-bottom: 10px;	
+}
+div.deck_player, div.deck_player2, div.deck_house
+{	
+	position:relative;	
+	height:90px;
 }
 div#playeractions
 {
-	text-align:left;
-	margin-left: 20px;
-	padding-top: 10px;
+	text-align:center;
+	
 }
 div#playeractions button
 {
@@ -90,7 +99,84 @@ div#output
 	font-size: 16px;
 	color:#333333;
 }
-button#exit
+button.exitgame
 {
-	margin-left: 5px;
+	position:fixed;
+	right:20px;
+	top:20px;
+}
+div.gamestartform
+{
+	position: relative;
+	top:100px;
+	margin: auto;
+	width:50%;
+	z-index:2;
+}
+div.gamestartform div
+{
+	margin: auto;
+	padding-left:0;
+	padding-right:0;
+}
+div.namerow
+{
+	width:100%;
+	padding:8px 0px 8px 0px;	
+	margin-top:15px;
+	margin-bottom:15px;
+}
+button.singleplayer
+{
+	margin-right: 15px;
+}
+button.singleplayer, button.multiplayer, button.startmultplayer, div.multiplayer-dropdown
+{	
+	margin-left:0;
+}
+button.startmultplayer
+{
+	margin-right:10px;
+	margin-bottom:0px !important;
+}
+div.multiplayer-dropdown
+{
+	position:relative;
+	bottom:5px;
+	display:block;
+}
+.col-left{
+    float: none;
+	margin-left: 0;
+}
+.col-centered{
+    float: none;
+    margin: 0 auto;
+}
+.col-right{
+    float: none;
+	margin-right: 0;
+}
+div.gamearea
+{
+	min-height:100%;
+}
+div.gamearea div.row
+{
+	margin-bottom:20px;
+	
+}
+div.playeractions_container
+{
+	width:50%;
+	max-width:300px;
+	margin: auto;
+}
+div.betcolumn, div.betgroup
+{
+	padding-left:0px;
+}
+div.output
+{
+	margin:auto;
 }

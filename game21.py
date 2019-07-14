@@ -460,7 +460,7 @@ class Player:
     
     def toDict(self):
         #return jsonpickle.encode(self)
-        return {'name': self.name, 'money': self.money, 'bet_amount': self.bet_amount, 'hand': [i.tonum() for i in self.hand]}
+        return {'name': self.name, 'money': self.money, 'bet_amount': self.bet_amount, 'hand': [i.tonum() for i in self.hand], 'points': self.cardsvalue()}
 
     def __repr__(self):            
         return "{0}\n{1}EUR\n{2}".format(self.name, self.money, self.hand)
