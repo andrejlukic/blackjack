@@ -1,4 +1,6 @@
-
+	  const autorestart = true
+	  const restartcounter = 10 //seconds
+	  
 	  $("#playeractions").hide()
 	  $("div.multiplayerform").hide()
 	  $("button.startmultplayergame").hide()
@@ -247,11 +249,11 @@
 	    multiplayer = obj.players.length > 1
 		myturn = $('input#pid').val() == obj.player_turn
 		
-		generateInfoSpan($( 'div.deck_house_info' ), obj.house)
+		generateInfoSpan($( 'div.deck_house_info' ), $( 'div.deck_house' ), obj.house)
 		for(pindex=0;pindex<obj.players.length;pindex++)
 		{
 			addCards(obj.players[pindex].hand, $( 'div.deck_player_'+(pindex+1) ), false, !multiplayer)
-			generateInfoSpan($( 'div.deck_player_info_'+(pindex+1) ), obj.players[pindex])			
+			generateInfoSpan($( 'div.deck_player_info_'+(pindex+1) ), $( 'div.deck_player_'+(pindex+1) ), obj.players[pindex])			
 		}
 		
 		if(myturn)
@@ -267,11 +269,27 @@
 		
 		if(!obj.game_state)
 		{	
-			$("div.output").text("Round is over. "+obj.msg)
+			game_results = obj.msg.split(',')
+			$("div.output").append("<div class=\"game-message\"></div>")
+			for(r=0;r<game_results.length;r++)
+			{
+				player_result = game_results[r]
+				cssclass = ""
+				if(player_result.includes("+"))
+					cssclass = "won"
+				else if(player_result.includes("-"))
+					cssclass = "lost"
+				else
+					cssclass = "tied"
+				
+				$("div.game-message").append("<span class=\""+cssclass+"\">"+player_result+"</span>")
+			}
+			// $("div.output").text("<div class=\"game-message\">"+obj.msg+"</div>")
 			$("#playeractions").hide()	
 					
-			addCards(obj.house.hand, $( 'div.deck_house' ), false, true)			
-			countdownrestartgame(obj, 6)
+			addCards(obj.house.hand, $( 'div.deck_house' ), false, true)	
+			if(autorestart)
+				countdownrestartgame(obj, restartcounter)
 			
 		}
 		else
@@ -301,11 +319,10 @@
 	function countdownrestartgame(obj, delaysecs)
 	{
 		counter=delaysecs
-		i = window.setInterval(function(){
-			if(counter <= (delaysecs-1))
-			{
-					$("div.output").text("Next round in "+counter+" secs ...")
-			}			  
+		$("div.output").append("<div id=\"counter-div\">Next round in "+counter+" secs ...</div>")
+		cntdiv = $("div#counter-div")
+		i = window.setInterval(function(){			
+		cntdiv.text("Next round in "+counter+" secs ...")						  
 		  counter--			 
 		}, 1000);
 		
@@ -328,14 +345,14 @@
 			  
 		  }, delaysecs*1000);
 	}
-	function generateInfoSpan(info_div, player)
+	function generateInfoSpan(info_div, cards_div, player)
 	{
 		info_div.empty()
-		addbadge = ""
+		addbadge = ""		
 		if(player.points == 21)
-			addbadge = "<span class=\"badge badge-pill badge-warning\" style=\"font-size: 1.0rem;\"> 21 </span>"
+			addbadge = "<div class=\"game-result-badge\"><span class=\"badge badge-pill badge-warning\" style=\"font-size: 0.8rem;\"> 21 </span></div>"
 		else if(player.points > 21)
-			addbadge = "<span class=\"badge badge-pill badge-dark\" style=\"font-size: 1.0rem;\"> BUST </span>"
+			addbadge = "<div class=\"game-result-badge\"><span class=\"badge badge-pill badge-dark\" style=\"font-size: 0.8rem;\"> BUST </span></div>"
 		if(player.name != "house")
 		{
 			info_div.append(player.name+"<br /><span class=\"badge badge-secondary\">"+player.bet_amount+"€ ("+player.money+"€)</span> "+addbadge)
@@ -344,6 +361,11 @@
 		{
 			info_div.append(player.name+"<br /><span class=\"badge badge-secondary\">"+player.money+"€</span> "+addbadge)
 		}
+		
+		/*if(addbadge)
+		{
+			cards_div.append(addbadge)
+		}*/
 		
 	}
 	function addCards(hand, containerDiv, hideLast, horizontal)

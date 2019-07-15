@@ -179,6 +179,7 @@ class Game21:
         """
         
         dbgmsg = [] #for UI and debugging purposes
+        house_bank = self.house.money
         for p in self.players:
             if(self.house.has21()):
                 if(p.has21()):      #player also has 21 it's a tie                    
@@ -204,27 +205,28 @@ class Game21:
                         dbgmsg.append(self.tie(p)) #player and house have the same points
                     else:
                         dbgmsg.append(self.playerwins(p)) #player is closer to 21 than house
+        dbgmsg.append('House {0:+d}€ [{1}]'.format(int(self.house.money - house_bank), self.house.cardsvalue()))
         return dbgmsg
     
     def tie(self, player):
         """ Return the bet amount to player """
         
-        player.tie()
-        return "{} tied".format(player.name)
+        amount = player.tie()
+        return "{} ties [{}]".format(player.name, player.cardsvalue())
 
     def housewins(self, player):
         """ House takes player's bet """
                 
         lost = player.loose()                    
         self.house.win(lost)
-        return "{} lost".format(player.name)
+        return "{} -{}€ [{}]".format(player.name, lost, player.cardsvalue())
         
     def playerwins(self, player):
         """ Player gets bet amount """
         
         amount = player.win()   #TODO: factor is more than 1.0 if 21                    
         self.house.loose(amount)
-        return "{} won".format(player.name)
+        return "{} +{}€ [{}]".format(player.name, amount, player.cardsvalue())
           
     def startgame(self):
         """ Give cards to each of the players and set the turn to the first player. """

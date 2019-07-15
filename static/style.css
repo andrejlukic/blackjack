@@ -73,6 +73,7 @@ div.deck_player_info, div.deck_house_info
 	text-align: left;	
 	margin-left: 5px;
 	padding-bottom: 10px;	
+	position:relative;
 }
 div.deck_player, div.deck_house
 {	
@@ -185,4 +186,31 @@ div.betcolumn, div.betgroup
 div.output
 {
 	margin:auto;
+}
+div.game-result-badge
+{	
+	position: absolute;	
+	top:0em;
+	transform: translate(0, -80%);
+	z-index:3;
+	/*top:-50%;
+	left:-50%;
+	transform: translate(-50%, -50%);*/
+z-index:3;	
+}
+div.game-message
+{	
+	font-size: 1em;
+	color: black;
+}
+div.game-message span.won
+{	
+}
+div.game-message span.lost
+{	
+	color: gray;
+}
+div.game-message span.tied
+{	
+	
 }
